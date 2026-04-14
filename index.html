@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logistics Flow Commander v7</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        :root {
+            --sidebar-bg: #0f172a;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --accent: #38bdf8;
+            --accent-hover: #0ea5e9;
+            --input-bg: #1e293b;
+            --btn-export: #8b5cf6; 
+            --btn-export-hover: #7c3aed;
+        }
+
+        body { margin: 0; padding: 0; font-family: 'Roboto', sans-serif; display: flex; height: 100vh; overflow: hidden; background: #000; }
+        
+        #controls {
+            width: 360px; height: 100%; background: var(--sidebar-bg); color: var(--text-main);
+            box-shadow: 4px 0 20px rgba(0,0,0,0.5); z-index: 1000; display: flex; flex-direction: column;
+        }
+
+        .controls-scrollable { flex: 1; min-height: 0; overflow-y: auto; padding: 25px; padding-bottom: 40px; }
+        #map { flex: 1; height: 100%; z-index: 1; }
+        
+        h3 { margin: 0 0 20px 0; font-weight: 700; font-size: 1.4rem; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; }
+        
+        .btn { display: inline-flex; align-items: center; justify-content: center; font-weight: 600; padding: 14px 24px; border-radius: 8px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border: none; font-family: inherit; width: 100%; }
+        .btn:hover { transform: translateY(-2px); }
+        .btn:active { transform: translateY(0); }
+
+        .file-upload-wrapper { margin-bottom: 25px; text-align: center; width: 100%; }
+        input[type="file"] { display: none; }
+        .btn-upload { background: linear-gradient(135deg, var(--accent), var(--accent-hover)); color: #0f172a; }
+        
+        #dateFiltersContainer { display: none; margin-bottom: 20px; }
+        .date-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .date-chip { background: #334155; color: var(--text-main); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; border: 1px solid transparent; transition: 0.2s; }
+        .date-chip:hover { background: #475569; }
+        .date-chip.active { background: var(--accent); color: #0f172a; font-weight: 700; border-color: #fff; }
+
+        #cityFiltersContainer { display: none; margin-bottom: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
+        .filter-list { max-height: 140px; overflow-y: auto; background: var(--input-bg); border-radius: 6px; padding: 10px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
+        .filter-list label { display: flex; align-items: center; font-size: 0.85rem; margin-bottom: 8px; cursor: pointer; color: var(--text-main); }
+        .filter-list label:last-child { margin-bottom: 0; }
+        .filter-list input { margin-right: 8px; cursor: pointer; width: 14px; height: 14px; }
+        .filter-hint { font-size: 0.7rem; color: var(--text-muted); font-weight: normal; margin-left: 5px; text-transform: none; }
+
+        .filter-list::-webkit-scrollbar { width: 4px; }
+        .filter-list::-webkit-scrollbar-track { background: transparent; }
+        .filter-list::-webkit-scrollbar-thumb { background: #475569; border-radius: 2px; }
+
+        .export-section { padding: 20px 25px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; background: var(--sidebar-bg); flex-shrink: 0; width: 100%; }
+        .btn-export { background: linear-gradient(135deg, var(--btn-export), var(--btn-export-hover)); color: white; }
+
+        h4 { margin: 20px 0 10px 0; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.2px; font-weight: 600; }
+        .control-group { background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); }
+        .slider-label { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 8px; }
+        .slider-val { font-weight: bold; color: var(--accent); }
+
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; margin: 5px 0; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #fff; cursor: pointer; margin-top: -6px; box-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: #334155; border-radius: 2px; }
+
+        select { width: 100%; padding: 10px; background: #334155; color: white; border: none; border-radius: 6px; cursor: pointer; outline: none; margin-bottom: 10px; }
+        select:hover { background: #475569; }
+
+        .checkbox-wrapper { display: flex; align-items: center; font-size: 0.85rem; cursor: pointer; margin-top: 10px; }
+        .checkbox-wrapper input { margin-right: 10px; cursor: pointer; width: 16px; height: 16px; flex-shrink: 0; }
+
+        #status { margin-top: 15px; font-size: 0.85rem; padding: 10px; border-radius: 6px; text-align: center; background: rgba(255,255,255,0.05); font-weight: 500;}
+        
+        .rotated-label-container { overflow: visible; pointer-events: none; }
+        .rotated-label-content { position: absolute; background: rgba(15, 23, 42, 0.85); color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; white-space: nowrap; text-align: center; border: 1px solid; box-shadow: 0 4px 8px rgba(0,0,0,0.5); font-weight: 500; backdrop-filter: blur(2px); }
+
+        /* Кастомный стиль для названий городов (чтобы текст не был в некрасивой белой рамке) */
+        .city-label-tooltip {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.8rem;
+            /* Тень создает "обводку" текста, чтобы он читался на любом фоне */
+            text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000; 
+        }
+        .city-label-tooltip::before { display: none !important; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--sidebar-bg); }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+    <div id="controls">
+        <div class="controls-scrollable">
+            <h3>🚚 Logistics Flow Pro</h3>
+            
+            <div class="file-upload-wrapper">
+                <label for="fileInput" class="btn btn-upload" id="uploadLabel">
+                    📂 Завантажити файл
+                </label>
+                <input type="file" id="fileInput" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" />
+            </div>
+
+            <div id="dateFiltersContainer">
+                <h4>📅 Зріз по даті</h4>
+                <div id="dateChips" class="date-chips"></div>
+            </div>
+
+            <div id="cityFiltersContainer">
+                <h4>📍 Відправник <span class="filter-hint">Обери потрібні</span></h4>
+                <div class="filter-list" id="cityA_list"></div>
+                
+                <h4>🏁 Отримувач <span class="filter-hint">Обери потрібні</span></h4>
+                <div class="filter-list" id="cityB_list"></div>
+            </div>
+
+            <div id="settings">
+                <h4>Зовнішній вигляд</h4>
+                <div class="control-group">
+                    <div class="slider-label">Колір ліній</div>
+                    <select id="colorSelect">
+                        <option value="#38bdf8">🟦 Блакитний</option>
+                        <option value="#10b981">🟩 Зелений</option>
+                        <option value="#f43f5e">🟥 Червоний</option>
+                        <option value="#f59e0b">🟧 Помаранчевий</option>
+                        <option value="#a855f7">🟪 Фіолетовий</option>
+                    </select>
+
+                    <div class="slider-label" style="margin-top: 10px;"><span>Товщина ліній</span><span id="weightVal" class="slider-val">2</span></div>
+                    <input type="range" id="weightRange" min="1" max="10" value="2">
+                </div>
+
+                <h4>Відображення даних</h4>
+                <div class="control-group">
+                    <label class="checkbox-wrapper">
+                        <input type="checkbox" id="alwaysShowLabels">
+                        Відображати метрики
+                    </label>
+                    <label class="checkbox-wrapper">
+                        <input type="checkbox" id="showCityLabels">
+                        Відображати назви точок
+                    </label>
+                </div>
+                
+                <div id="status" style="color: var(--text-muted)">Дані не завантажено</div>
+            </div>
+        </div>
+
+        <div class="export-section">
+            <button id="snapBtn" class="btn btn-export">
+                📸 Скачати мапу (.png)
+            </button>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/leaflet-simple-map-screenshoter"></script>
+
+    <script>
+        const lightMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM', maxZoom: 19, crossOrigin: true });
+        const darkMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; CartoDB', maxZoom: 20, crossOrigin: true });
+        const satelliteMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '&copy; Esri', maxZoom: 18, crossOrigin: true });
+
+        const map = L.map('map', { center: [48.37, 31.16], zoom: 6, layers: [lightMap], preferCanvas: true });
+        const baseMaps = { "Світла": lightMap, "Темна": darkMap,  "Супутник": satelliteMap };
+        L.control.layers(baseMaps, null, {position: 'topright'}).addTo(map);
+        const screenshoter = L.simpleMapScreenshoter({ hidden: true, mimeType: 'image/png' }).addTo(map);
+
+        const linesLayerGroup = L.layerGroup().addTo(map);
+        const markersLayerGroup = L.layerGroup().addTo(map);
+
+        let cachedData = []; 
+        let selectedDate = null; 
+
+        const weightInput = document.getElementById('weightRange');
+        const colorSelect = document.getElementById('colorSelect');
+        const labelsToggle = document.getElementById('alwaysShowLabels');
+        const cityLabelsToggle = document.getElementById('showCityLabels'); // Новый чекбокс
+        const statusDiv = document.getElementById('status');
+        const uploadLabel = document.getElementById('uploadLabel');
+        const snapBtn = document.getElementById('snapBtn');
+        const dateFiltersContainer = document.getElementById('dateFiltersContainer');
+        const dateChipsDiv = document.getElementById('dateChips');
+        const cityFiltersContainer = document.getElementById('cityFiltersContainer');
+
+        function formatSmartValue(val) {
+            if (val === null || val === undefined) return '';
+            const num = Number(val);
+            if (isNaN(num)) return val; 
+            const strVal = String(val);
+            if (strVal.includes('.')) {
+                const decimals = strVal.split('.')[1];
+                if (decimals.length >= 5 && num >= 0 && num <= 1000) {
+                    const totalSeconds = Math.round(num * 24 * 3600);
+                    const h = Math.floor(totalSeconds / 3600);
+                    const m = Math.floor((totalSeconds % 3600) / 60);
+                    const s = totalSeconds % 60;
+                    return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                }
+                return parseFloat(num.toFixed(2));
+            }
+            return num;
+        }
+
+        function formatExcelDate(val) {
+            const numVal = Number(val);
+            if (!isNaN(numVal) && numVal > 30000 && numVal < 100000) {
+                const date = new Date(Math.round((numVal - 25569) * 86400 * 1000));
+                return date.toLocaleDateString('ru-RU');
+            }
+            return String(val); 
+        }
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            uploadLabel.innerHTML = `⏳ Чтение...`;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                    processData(jsonData, file.name);
+                } catch (err) {
+                    statusDiv.innerHTML = "<span style='color:#ef4444'>Ошибка файла</span>";
+                    uploadLabel.innerHTML = "📂 Загрузить файл";
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function processData(data, filename) {
+            cachedData = [];
+            selectedDate = null;
+            const uniqueDates = new Set();
+            const uniqueCityA = new Set();
+            const uniqueCityB = new Set();
+            let bounds = new L.LatLngBounds();
+
+            data.forEach(row => {
+                const keys = Object.keys(row);
+                const latAKey = keys.find(k => /широта.*а|lat.*a/i.test(k));
+                const lngAKey = keys.find(k => /довгота.*а|долгота.*а|lon.*a|lng.*a/i.test(k));
+                const latBKey = keys.find(k => /широта.*б|lat.*b/i.test(k));
+                const lngBKey = keys.find(k => /довгота.*б|долгота.*б|lon.*b|lng.*b/i.test(k));
+                const cityAKey = keys.find(k => /ФРД.*а|город.*а|city.*a/i.test(k));
+                const cityBKey = keys.find(k => /ФРД.*б|город.*б|city.*b/i.test(k));
+                const dateKey = keys.find(k => /дата|date/i.test(k)); 
+
+                if (latAKey && lngAKey && latBKey && lngBKey) {
+                    const latA = parseFloat(row[latAKey]);
+                    const lngA = parseFloat(row[lngAKey]);
+                    const latB = parseFloat(row[latBKey]);
+                    const lngB = parseFloat(row[lngBKey]);
+
+                    if (!isNaN(latA) && !isNaN(lngA) && !isNaN(latB) && !isNaN(lngB)) {
+                        
+                        let metricsArray = [];
+                        const excludeKeys = [latAKey, lngAKey, latBKey, lngBKey, cityAKey, cityBKey, dateKey];
+                        
+                        keys.forEach(k => {
+                            if (!excludeKeys.includes(k) && row[k] !== undefined && row[k] !== '') {
+                                const formattedVal = formatSmartValue(row[k]);
+                                metricsArray.push(`<span style="color:#94a3b8">${k}:</span> ${formattedVal}`);
+                            }
+                        });
+                        
+                        let metricsHtml = metricsArray.join(' &nbsp;|&nbsp; ');
+
+                        const rowDate = dateKey ? formatExcelDate(row[dateKey]) : null;
+                        if (rowDate) uniqueDates.add(rowDate);
+
+                        const cA = cityAKey ? String(row[cityAKey]) : "Точка А";
+                        const cB = cityBKey ? String(row[cityBKey]) : "Точка Б";
+                        
+                        uniqueCityA.add(cA);
+                        uniqueCityB.add(cB);
+
+                        cachedData.push({
+                            latA, lngA, latB, lngB,
+                            cityA: cA, cityB: cB,
+                            date: rowDate,
+                            metricsHtml: metricsHtml
+                        });
+                        bounds.extend([latA, lngA]);
+                        bounds.extend([latB, lngB]);
+                    }
+                }
+            });
+
+            if (cachedData.length > 0) {
+                renderDateFilters(Array.from(uniqueDates).sort());
+                renderCityFilters(Array.from(uniqueCityA), Array.from(uniqueCityB));
+                drawLogisticsMap();
+                map.fitBounds(bounds, { padding: [50, 50] });
+                
+                uploadLabel.innerHTML = `✅ ${filename}`;
+                uploadLabel.style.background = "linear-gradient(135deg, #10b981, #059669)";
+                uploadLabel.style.color = "white";
+            } else {
+                statusDiv.innerHTML = "<span style='color:#ef4444'>Колонки координат не найдены</span>";
+            }
+        }
+
+        function renderDateFilters(dates) {
+            dateChipsDiv.innerHTML = "";
+            if (dates.length === 0) {
+                dateFiltersContainer.style.display = "none";
+                return;
+            }
+            dateFiltersContainer.style.display = "block";
+
+            const allBtn = document.createElement('div');
+            allBtn.className = "date-chip active";
+            allBtn.innerText = "Все";
+            allBtn.onclick = () => {
+                document.querySelectorAll('.date-chip').forEach(c => c.classList.remove('active'));
+                allBtn.classList.add('active');
+                selectedDate = null;
+                drawLogisticsMap();
+            };
+            dateChipsDiv.appendChild(allBtn);
+
+            dates.forEach(date => {
+                const chip = document.createElement('div');
+                chip.className = "date-chip";
+                chip.innerText = date;
+                chip.onclick = () => {
+                    document.querySelectorAll('.date-chip').forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    selectedDate = date;
+                    drawLogisticsMap();
+                };
+                dateChipsDiv.appendChild(chip);
+            });
+        }
+
+        function renderCityFilters(citiesA, citiesB) {
+            const listA = document.getElementById('cityA_list');
+            const listB = document.getElementById('cityB_list');
+
+            if (citiesA.length === 0 && citiesB.length === 0) {
+                cityFiltersContainer.style.display = "none";
+                return;
+            }
+            cityFiltersContainer.style.display = "block";
+            listA.innerHTML = '';
+            listB.innerHTML = '';
+
+            citiesA.sort().forEach(city => {
+                const label = document.createElement('label');
+                label.innerHTML = `<input type="checkbox" value="${city}" class="filter-city-a"> ${city}`;
+                label.querySelector('input').addEventListener('change', drawLogisticsMap);
+                listA.appendChild(label);
+            });
+
+            citiesB.sort().forEach(city => {
+                const label = document.createElement('label');
+                label.innerHTML = `<input type="checkbox" value="${city}" class="filter-city-b"> ${city}`;
+                label.querySelector('input').addEventListener('change', drawLogisticsMap);
+                listB.appendChild(label);
+            });
+        }
+
+        function drawLogisticsMap() {
+            linesLayerGroup.clearLayers();
+            markersLayerGroup.clearLayers();
+            if (cachedData.length === 0) return;
+
+            const weight = parseInt(weightInput.value);
+            const color = colorSelect.value;
+            const showLabels = labelsToggle.checked;
+            const showCityNames = cityLabelsToggle.checked; // Проверяем настройку городов
+
+            document.getElementById('weightVal').textContent = weight;
+
+            const selectedA = Array.from(document.querySelectorAll('.filter-city-a:checked')).map(cb => cb.value);
+            const selectedB = Array.from(document.querySelectorAll('.filter-city-b:checked')).map(cb => cb.value);
+
+            const filteredData = cachedData.filter(d => {
+                let passDate = selectedDate ? d.date === selectedDate : true;
+                let passA = selectedA.length > 0 ? selectedA.includes(d.cityA) : true;
+                let passB = selectedB.length > 0 ? selectedB.includes(d.cityB) : true;
+                return passDate && passA && passB;
+            });
+
+            const drawnCities = new Set(); // ТА САМАЯ защита от дублей
+
+            filteredData.forEach(item => {
+                const latlngA = L.latLng(item.latA, item.lngA);
+                const latlngB = L.latLng(item.latB, item.lngB);
+
+                L.polyline([latlngA, latlngB], { color: color, weight: weight, opacity: 0.6 }).addTo(linesLayerGroup);
+
+                if (item.metricsHtml !== "" && showLabels) {
+                    const pA = map.project(latlngA, 0);
+                    const pB = map.project(latlngB, 0);
+                    const midPoint = map.unproject(L.point((pA.x + pB.x) / 2, (pA.y + pB.y) / 2), 0);
+                    let angle = Math.atan2(pB.y - pA.y, pB.x - pA.x) * (180 / Math.PI);
+                    if (pB.x < pA.x) angle += 180;
+
+                    const labelIcon = L.divIcon({
+                        className: 'rotated-label-container',
+                        html: `<div class="rotated-label-content" style="transform: translate(-50%, -50%) rotate(${angle}deg) translateY(-20px); border-color: ${color};">${item.metricsHtml}</div>`,
+                        iconSize: [0, 0]
+                    });
+                    L.marker(midPoint, { icon: labelIcon }).addTo(linesLayerGroup);
+                }
+
+                // Отрисовка городов с защитой от дублирования
+                const drawCityMarker = (lat, lng, name) => {
+                    const cityId = `${lat}_${lng}`; // Уникальный ключ по координатам
+                    if (!drawnCities.has(cityId)) {
+                        L.circleMarker([lat, lng], { radius: Math.max(weight + 1, 4), color: '#fff', weight: 1, fillColor: color, fillOpacity: 1 })
+                        .bindTooltip(name, { 
+                            permanent: showCityNames, // Если галочка стоит - текст виден всегда
+                            direction: 'top', 
+                            offset: [0, -10],
+                            className: showCityNames ? 'city-label-tooltip' : '' // Подключаем кастомный CSS только если они постоянные
+                        })
+                        .addTo(markersLayerGroup);
+                        drawnCities.add(cityId); // Запоминаем, что тут маркер уже есть
+                    }
+                };
+                drawCityMarker(item.latA, item.lngA, item.cityA);
+                drawCityMarker(item.latB, item.lngB, item.cityB);
+            });
+
+            statusDiv.innerHTML = `Показано зв'язків: <span style="color:#38bdf8">${filteredData.length}</span> из ${cachedData.length}`;
+        }
+
+        snapBtn.addEventListener('click', function() {
+            const originalText = snapBtn.textContent;
+            snapBtn.textContent = "⏳ Створення знімку...";
+            screenshoter.takeScreen('blob').then(blob => {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `logistics_export_${new Date().getTime()}.png`;
+                link.click();
+                snapBtn.textContent = originalText;
+            }).catch(e => {
+                console.error(e);
+                alert("Помилка. Можливо, браузер блокує завантаження мапи.");
+                snapBtn.textContent = originalText;
+            });
+        });
+
+        // Слушатели настроек
+        weightInput.addEventListener('input', drawLogisticsMap);
+        colorSelect.addEventListener('change', drawLogisticsMap);
+        labelsToggle.addEventListener('change', drawLogisticsMap);
+        cityLabelsToggle.addEventListener('change', drawLogisticsMap); // Слушаем новый чекбокс
+    </script>
+</body>
+</html>
