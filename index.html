@@ -98,6 +98,19 @@
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: var(--sidebar-bg); }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+
+        /* Анимация потока логистики (движение от А к Б) */
+        .animated-flow {
+            /* Длительность 1.5 секунды, линейная скорость, бесконечный повтор */
+            animation: flowAnimation 1.5s linear infinite;
+            pointer-events: none; /* Чтобы линия пульса не мешала кликам по карте */
+        }
+
+        @keyframes flowAnimation {
+            /* Значение 100 равно сумме dashArray (15 + 85), это заставляет импульс двигаться вперед */
+            from { stroke-dashoffset: 100; }
+            to { stroke-dashoffset: 0; }
+        }
     </style>
 </head>
 <body>
@@ -145,6 +158,10 @@
                 <h4>Відображення даних</h4>
                 <div class="control-group">
                     <label class="checkbox-wrapper">
+                        <input type="checkbox" id="animateFlow" checked>
+                        Анімувати рух
+                    </label>
+                    <label class="checkbox-wrapper">
                         <input type="checkbox" id="alwaysShowLabels">
                         Відображати метрики
                     </label>
@@ -176,7 +193,7 @@
         const darkMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; CartoDB', maxZoom: 20, crossOrigin: true });
         const satelliteMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '&copy; Esri', maxZoom: 18, crossOrigin: true });
 
-        const map = L.map('map', { center: [48.37, 31.16], zoom: 6, layers: [lightMap], preferCanvas: true });
+        const map = L.map('map', { center: [48.37, 31.16], zoom: 6, layers: [lightMap] });
         const baseMaps = { "Світла": lightMap, "Темна": darkMap,  "Супутник": satelliteMap };
         L.control.layers(baseMaps, null, {position: 'topright'}).addTo(map);
         const screenshoter = L.simpleMapScreenshoter({ hidden: true, mimeType: 'image/png' }).addTo(map);
@@ -191,6 +208,7 @@
         const colorSelect = document.getElementById('colorSelect');
         const labelsToggle = document.getElementById('alwaysShowLabels');
         const cityLabelsToggle = document.getElementById('showCityLabels'); // Новый чекбокс
+        const animateToggle = document.getElementById('animateFlow');
         const statusDiv = document.getElementById('status');
         const uploadLabel = document.getElementById('uploadLabel');
         const snapBtn = document.getElementById('snapBtn');
@@ -387,6 +405,7 @@
             const color = colorSelect.value;
             const showLabels = labelsToggle.checked;
             const showCityNames = cityLabelsToggle.checked; // Проверяем настройку городов
+            const isAnimated = animateToggle.checked
 
             document.getElementById('weightVal').textContent = weight;
 
@@ -406,7 +425,23 @@
                 const latlngA = L.latLng(item.latA, item.lngA);
                 const latlngB = L.latLng(item.latB, item.lngB);
 
-                L.polyline([latlngA, latlngB], { color: color, weight: weight, opacity: 0.6 }).addTo(linesLayerGroup);
+                // 1. Основная линия (маршрут). Делаем ее чуть более прозрачной.
+                L.polyline([latlngA, latlngB], { 
+                    color: color, 
+                    weight: weight, 
+                    opacity: isAnimated ? 0.3 : 0.6 
+                }).addTo(linesLayerGroup);
+
+                // 2. Анимированный "градиент/импульс", бегущий от А к Б
+                if (isAnimated) {
+                    L.polyline([latlngA, latlngB], { 
+                        color: '#ffffff',
+                        weight: Math.max(1, weight - 1),
+                        opacity: 0.8,
+                        dashArray: '15, 85',
+                        className: 'animated-flow'
+                    }).addTo(linesLayerGroup);
+                }
 
                 if (item.metricsHtml !== "" && showLabels) {
                     const pA = map.project(latlngA, 0);
@@ -466,6 +501,7 @@
         colorSelect.addEventListener('change', drawLogisticsMap);
         labelsToggle.addEventListener('change', drawLogisticsMap);
         cityLabelsToggle.addEventListener('change', drawLogisticsMap); // Слушаем новый чекбокс
+        animateToggle.addEventListener('change', drawLogisticsMap);
     </script>
 </body>
 </html>
