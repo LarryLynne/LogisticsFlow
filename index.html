@@ -80,7 +80,20 @@
         #status { margin-top: 15px; font-size: 0.85rem; padding: 10px; border-radius: 6px; text-align: center; background: rgba(255,255,255,0.05); font-weight: 500;}
         
         .rotated-label-container { overflow: visible; pointer-events: none; }
-        .rotated-label-content { position: absolute; background: rgba(15, 23, 42, 0.85); color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; white-space: nowrap; text-align: center; border: 1px solid; box-shadow: 0 4px 8px rgba(0,0,0,0.5); font-weight: 500; backdrop-filter: blur(2px); }
+        .rotated-label-content { 
+            position: absolute; 
+            background: rgba(15, 23, 42, 0.85); 
+            color: #fff; 
+            padding: 2px 6px; /* Уменьшены отступы (было 4px 8px) */
+            border-radius: 4px; /* Уменьшено скругление */
+            font-size: 0.7rem; /* Немного уменьшен шрифт */
+            white-space: nowrap; 
+            text-align: center; 
+            border: 1px solid; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5); 
+            font-weight: 500; 
+            backdrop-filter: blur(2px); 
+        }
 
         /* Кастомный стиль для названий городов (чтобы текст не был в некрасивой белой рамке) */
         .city-label-tooltip {
@@ -153,6 +166,14 @@
 
                     <div class="slider-label" style="margin-top: 10px;"><span>Товщина ліній</span><span id="weightVal" class="slider-val">2</span></div>
                     <input type="range" id="weightRange" min="1" max="10" value="2">
+                    <div class="slider-label" style="margin-top: 10px;">Колір кордонів</div>
+                    <select id="borderColorSelect">
+                        <option value="#38bdf8">🟦 Блакитний</option>
+                        <option value="#ffffff">⬜ Білий</option>
+                        <option value="#fbbf24">🟨 Жовтий</option>
+                        <option value="#10b981">🟩 Зелений</option>
+                        <option value="#f43f5e">🟥 Червоний</option>
+                    </select>
                 </div>
 
                 <h4>Відображення даних</h4>
@@ -196,6 +217,59 @@
         const map = L.map('map', { center: [48.37, 31.16], zoom: 6, layers: [lightMap] });
         const baseMaps = { "Світла": lightMap, "Темна": darkMap,  "Супутник": satelliteMap };
         L.control.layers(baseMaps, null, {position: 'topright'}).addTo(map);
+        // --- ДОБАВЛЯЕМ ГРАНИЦЫ УКРАИНЫ ---
+        // --- ГРАНИЦЫ УКРАИНЫ С НАСТРОЙКОЙ ---
+        let ukraineLayer = null; // Переменная для хранения слоя
+
+        function loadUkraineBounds() {
+            const ukraineGeoJsonUrl = 'https://raw.githubusercontent.com/johan/world.geo.json/master/countries/UKR.geo.json';
+            const selectedColor = document.getElementById('borderColorSelect').value;
+
+            fetch(ukraineGeoJsonUrl)
+                .then(response => response.json())
+                .then(data => {
+                    // Если слой уже был — удаляем его (теперь это LayerGroup)
+                    if (ukraineLayer) map.removeLayer(ukraineLayer);
+                    
+                    // Создаем группу, чтобы положить туда два слоя (свечение + контур)
+                    ukraineLayer = L.layerGroup().addTo(map);
+
+                    // 1. Слой свечения (толстая полупрозрачная линия + заливка)
+                    L.geoJSON(data, {
+                        style: {
+                            color: selectedColor,
+                            weight: 15,           // Ширина "свечения" (можешь увеличить)
+                            opacity: 0.25,        // Полупрозрачность "свечения"
+                            fillColor: selectedColor,
+                            fillOpacity: 0.05,    // Легкое окрашивание самой территории
+                            lineJoin: 'round',
+                            lineCap: 'round'
+                        },
+                        interactive: false
+                    }).addTo(ukraineLayer);
+
+                    // 2. Основной контур (тонкая яркая линия сверху)
+                    L.geoJSON(data, {
+                        style: {
+                            color: selectedColor,
+                            weight: 2,            // Тонкая основная линия
+                            opacity: 1,           // Полностью непрозрачная
+                            fill: false,          // Заливку здесь отключаем, она есть в слое ниже
+                            lineJoin: 'round',
+                            lineCap: 'round'
+                        },
+                        interactive: false
+                    }).addTo(ukraineLayer);
+                })
+                .catch(err => console.error("Не удалось загрузить границы:", err));
+        }
+
+        // Запускаем при старте
+        loadUkraineBounds();
+
+        // Слушаем изменение цвета
+        document.getElementById('borderColorSelect').addEventListener('change', loadUkraineBounds);
+        // ----------------------------------
         const screenshoter = L.simpleMapScreenshoter({ hidden: true, mimeType: 'image/png' }).addTo(map);
 
         const linesLayerGroup = L.layerGroup().addTo(map);
@@ -295,7 +369,8 @@
                         keys.forEach(k => {
                             if (!excludeKeys.includes(k) && row[k] !== undefined && row[k] !== '') {
                                 const formattedVal = formatSmartValue(row[k]);
-                                metricsArray.push(`<span style="color:#94a3b8">${k}:</span> ${formattedVal}`);
+                                // Убрали <span style="color:#94a3b8">${k}:</span>, оставили только значение
+                                metricsArray.push(`${formattedVal}`);
                             }
                         });
                         
@@ -412,6 +487,25 @@
             const selectedA = Array.from(document.querySelectorAll('.filter-city-a:checked')).map(cb => cb.value);
             const selectedB = Array.from(document.querySelectorAll('.filter-city-b:checked')).map(cb => cb.value);
 
+            // --- ОБНОВЛЕННЫЙ БЛОК ---
+            // Считаем общее количество доступных городов в фильтрах
+            const totalA = document.querySelectorAll('.filter-city-a').length;
+            const totalB = document.querySelectorAll('.filter-city-b').length;
+
+            // Если ничего не выбрано (0), значит по факту активны "все" (total)
+            const activeCountA = selectedA.length > 0 ? selectedA.length : totalA;
+            const activeCountB = selectedB.length > 0 ? selectedB.length : totalB;
+
+            let labelOffset = 0.5; // По умолчанию середина (50%)
+
+            if (activeCountA < activeCountB) {
+                // Отправителей меньше (как на твоем скрине) -> сдвигаем тултипы ближе к получателям (Б), чтобы они разошлись веером
+                labelOffset = 0.75; 
+            } else if (activeCountB < activeCountA) {
+                // Получателей меньше -> сдвигаем тултипы ближе к отправителям (А)
+                labelOffset = 0.25; 
+            }
+
             const filteredData = cachedData.filter(d => {
                 let passDate = selectedDate ? d.date === selectedDate : true;
                 let passA = selectedA.length > 0 ? selectedA.includes(d.cityA) : true;
@@ -446,7 +540,11 @@
                 if (item.metricsHtml !== "" && showLabels) {
                     const pA = map.project(latlngA, 0);
                     const pB = map.project(latlngB, 0);
-                    const midPoint = map.unproject(L.point((pA.x + pB.x) / 2, (pA.y + pB.y) / 2), 0);
+
+                    // Считаем координаты по пропорции вместо обычного деления пополам
+                    const targetX = pA.x + (pB.x - pA.x) * labelOffset;
+                    const targetY = pA.y + (pB.y - pA.y) * labelOffset;
+                    const targetPoint = map.unproject(L.point(targetX, targetY), 0);
                     let angle = Math.atan2(pB.y - pA.y, pB.x - pA.x) * (180 / Math.PI);
                     if (pB.x < pA.x) angle += 180;
 
@@ -455,7 +553,7 @@
                         html: `<div class="rotated-label-content" style="transform: translate(-50%, -50%) rotate(${angle}deg) translateY(-20px); border-color: ${color};">${item.metricsHtml}</div>`,
                         iconSize: [0, 0]
                     });
-                    L.marker(midPoint, { icon: labelIcon }).addTo(linesLayerGroup);
+                    L.marker(targetPoint, { icon: labelIcon }).addTo(linesLayerGroup);
                 }
 
                 // Отрисовка городов с защитой от дублирования
