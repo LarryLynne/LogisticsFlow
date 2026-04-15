@@ -179,7 +179,7 @@
                 <h4>Відображення даних</h4>
                 <div class="control-group">
                     <label class="checkbox-wrapper">
-                        <input type="checkbox" id="animateFlow" checked>
+                        <input type="checkbox" id="animateFlow">
                         Анімувати рух
                     </label>
                     <label class="checkbox-wrapper">
@@ -214,7 +214,14 @@
         const darkMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; CartoDB', maxZoom: 20, crossOrigin: true });
         const satelliteMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '&copy; Esri', maxZoom: 18, crossOrigin: true });
 
-        const map = L.map('map', { center: [48.37, 31.16], zoom: 6, layers: [lightMap] });
+        const map = L.map('map', { 
+            center: [48.37, 31.16], 
+            zoom: 6, 
+            layers: [lightMap],
+            zoomSnap: 0.1,        // Разрешаем карте останавливаться на дробных значениях (например, зум 6.2)
+            zoomDelta: 0.5,       // Шаг зума при нажатии на кнопки +/- (меньше шаг = плавнее)
+            wheelPxPerZoomLevel: 120 // Чувствительность колесика мыши (чем больше цифра, тем мягче скролл)
+        });
         const baseMaps = { "Світла": lightMap, "Темна": darkMap,  "Супутник": satelliteMap };
         L.control.layers(baseMaps, null, {position: 'topright'}).addTo(map);
         // --- ДОБАВЛЯЕМ ГРАНИЦЫ УКРАИНЫ ---
@@ -228,33 +235,50 @@
             fetch(ukraineGeoJsonUrl)
                 .then(response => response.json())
                 .then(data => {
-                    // Если слой уже был — удаляем его (теперь это LayerGroup)
                     if (ukraineLayer) map.removeLayer(ukraineLayer);
                     
-                    // Создаем группу, чтобы положить туда два слоя (свечение + контур)
                     ukraineLayer = L.layerGroup().addTo(map);
 
-                    // 1. Слой свечения (толстая полупрозрачная линия + заливка)
+                    // Настройки слоев свечения: от самого широкого/прозрачного к узкому/яркому
+                    const glowLayers = [
+                        { weight: 24, opacity: 0.02 },
+                        { weight: 16, opacity: 0.05 },
+                        { weight: 10, opacity: 0.1 },
+                        { weight: 6,  opacity: 0.2 }
+                    ];
+
+                    // 1. Рисуем слои свечения (градиент)
+                    glowLayers.forEach(glow => {
+                        L.geoJSON(data, {
+                            style: {
+                                color: selectedColor,
+                                weight: glow.weight,
+                                opacity: glow.opacity,
+                                fill: false, // Заливку тут не делаем, чтобы не множить её
+                                lineJoin: 'round',
+                                lineCap: 'round'
+                            },
+                            interactive: false
+                        }).addTo(ukraineLayer);
+                    });
+
+                    // 2. Отдельный слой только для легкой заливки территории внутри
                     L.geoJSON(data, {
                         style: {
-                            color: selectedColor,
-                            weight: 15,           // Ширина "свечения" (можешь увеличить)
-                            opacity: 0.25,        // Полупрозрачность "свечения"
+                            stroke: false, // Без рамки
                             fillColor: selectedColor,
-                            fillOpacity: 0.05,    // Легкое окрашивание самой территории
-                            lineJoin: 'round',
-                            lineCap: 'round'
+                            fillOpacity: 0.03
                         },
                         interactive: false
                     }).addTo(ukraineLayer);
 
-                    // 2. Основной контур (тонкая яркая линия сверху)
+                    // 3. Основной четкий контур по самому центру
                     L.geoJSON(data, {
                         style: {
                             color: selectedColor,
-                            weight: 2,            // Тонкая основная линия
-                            opacity: 1,           // Полностью непрозрачная
-                            fill: false,          // Заливку здесь отключаем, она есть в слое ниже
+                            weight: 2,
+                            opacity: 1,
+                            fill: false,
                             lineJoin: 'round',
                             lineCap: 'round'
                         },
@@ -263,7 +287,6 @@
                 })
                 .catch(err => console.error("Не удалось загрузить границы:", err));
         }
-
         // Запускаем при старте
         loadUkraineBounds();
 
