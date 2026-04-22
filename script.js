@@ -72,7 +72,8 @@ let filterableColumns = [];
 
 const weightInput = document.getElementById('weightRange');
 const colorSelect = document.getElementById('colorSelect');
-const labelsToggle = document.getElementById('alwaysShowLabels');
+const showTimeToggle = document.getElementById('showTimeLabel');
+const showEHToggle = document.getElementById('showEHLabel');
 const cityLabelsToggle = document.getElementById('showCityLabels'); 
 const animateToggle = document.getElementById('animateFlow');
 const sequentialToggle = document.getElementById('sequentialAnimation');
@@ -274,7 +275,8 @@ function drawLogisticsMap() {
 
     const weight = parseInt(weightInput.value);
     const color = colorSelect.value;
-    const showLabels = labelsToggle.checked;
+    const showTime = showTimeToggle.checked;
+    const showEH = showEHToggle.checked;
     const showCityNames = cityLabelsToggle.checked; 
     const isAnimated = animateToggle.checked;
     const isRadarSequence = sequentialToggle.checked;
@@ -323,13 +325,19 @@ function drawLogisticsMap() {
         let avgDurationSec = group.totalEH > 0 ? group.totalFundSec / group.totalEH : group.sumDurationSec / group.count;
         let metricsArray = [];
 
-        if (avgDurationSec > 0) {
+        // Додаємо час тільки якщо включений відповідний чекбокс
+        if (showTime && avgDurationSec > 0) {
             const h = Math.floor(avgDurationSec / 3600);
             const m = Math.floor((avgDurationSec % 3600) / 60);
             const s = Math.round(avgDurationSec % 60);
             metricsArray.push(`${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
         }
-        if (group.totalEH > 0) metricsArray.push(`${Math.round(group.totalEH)} ЕН`);
+        
+        // Додаємо ЕН тільки якщо включений відповідний чекбокс
+        if (showEH && group.totalEH > 0) {
+            metricsArray.push(`${Math.round(group.totalEH)} ЕН`);
+        }
+        
         group.metricsHtml = metricsArray.join(' | ');
         return group;
     });
@@ -376,7 +384,7 @@ function drawLogisticsMap() {
             L.polyline([latlngA, latlngB], { color: color, weight: weight, className: 'radar-fade' }).addTo(tempGroup);
             if (isAnimated) L.polyline([latlngA, latlngB], { color: '#ffffff', weight: Math.max(1, weight - 1), dashArray: '15, 85', className: 'animated-flow radar-fade' }).addTo(tempGroup);
 
-            if (item.metricsHtml !== "" && showLabels) {
+            if (item.metricsHtml !== "") {
                 const pA = map.project(latlngA, 0); const pB = map.project(latlngB, 0);
                 const targetPoint = map.unproject(L.point(pA.x + (pB.x - pA.x) * labelOffset, pA.y + (pB.y - pA.y) * labelOffset), 0);
                 let textAngle = Math.atan2(pB.y - pA.y, pB.x - pA.x) * (180 / Math.PI);
@@ -401,7 +409,7 @@ function drawLogisticsMap() {
             L.polyline([latlngA, latlngB], { color: color, weight: weight, opacity: isAnimated ? 0.3 : 0.6 }).addTo(linesLayerGroup);
             if (isAnimated) L.polyline([latlngA, latlngB], { color: '#ffffff', weight: Math.max(1, weight - 1), opacity: 0.8, dashArray: '15, 85', className: 'animated-flow' }).addTo(linesLayerGroup);
 
-            if (item.metricsHtml !== "" && showLabels) {
+            if (item.metricsHtml !== "") {
                 const pA = map.project(latlngA, 0); const pB = map.project(latlngB, 0);
                 const targetPoint = map.unproject(L.point(pA.x + (pB.x - pA.x) * labelOffset, pA.y + (pB.y - pA.y) * labelOffset), 0);
                 let angle = Math.atan2(pB.y - pA.y, pB.x - pA.x) * (180 / Math.PI);
@@ -436,7 +444,8 @@ snapBtn.addEventListener('click', function() {
 
 weightInput.addEventListener('input', drawLogisticsMap);
 colorSelect.addEventListener('change', drawLogisticsMap);
-labelsToggle.addEventListener('change', drawLogisticsMap);
+showTimeToggle.addEventListener('change', drawLogisticsMap);
+showEHToggle.addEventListener('change', drawLogisticsMap);
 cityLabelsToggle.addEventListener('change', drawLogisticsMap); 
 animateToggle.addEventListener('change', drawLogisticsMap);
 sequentialToggle.addEventListener('change', drawLogisticsMap);
