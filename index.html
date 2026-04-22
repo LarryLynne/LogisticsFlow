@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Logistics Flow Commander v7</title>
+    <title>Logistics Flow Commander</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -14,26 +14,26 @@
 
     <div id="controls">
         <div class="controls-scrollable">
-            <h3>🚚 Logistics Flow Pro</h3>
+            <h3>SpeedInfo</h3>
             
-            <div class="file-upload-wrapper">
-                <label for="fileInput" class="btn btn-upload" id="uploadLabel">
-                    📂 Завантажити файл
-                </label>
-                <input type="file" id="fileInput" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" />
+            <div class="google-sheets-wrapper">
+                <button id="loadSheetBtn" class="btn">
+                    🔄 Оновити дані
+                </button>
+                <div id="sheetStatus" class="status-msg"></div>
             </div>
 
-            <div id="dateFiltersContainer">
-                <h4>📅 Зріз по даті</h4>
-                <div id="dateChips" class="date-chips"></div>
-            </div>
+            <div id="dynamicFiltersGeneral" style="margin-bottom: 15px;"></div>
 
-            <div id="cityFiltersContainer">
-                <h4>📍 Відправник <span class="filter-hint">Обери потрібні</span></h4>
-                <div class="filter-list" id="cityA_list"></div>
-                
-                <h4>🏁 Отримувач <span class="filter-hint">Обери потрібні</span></h4>
-                <div class="filter-list" id="cityB_list"></div>
+            <div class="filters-split">
+                <div id="filtersColumnA" class="filter-column">
+                    <h4>Відправник</h4>
+                    <div id="dynamicFiltersA"></div>
+                </div>
+                <div id="filtersColumnB" class="filter-column">
+                    <h4>Отримувач</h4>
+                    <div id="dynamicFiltersB"></div>
+                </div>
             </div>
 
             <div id="settings">
@@ -68,11 +68,15 @@
                     </label>
                     <label class="checkbox-wrapper">
                         <input type="checkbox" id="alwaysShowLabels">
-                        Відображати метрики
+                        Відображати метрики (ЕН, Час)
                     </label>
                     <label class="checkbox-wrapper">
                         <input type="checkbox" id="showCityLabels">
                         Відображати назви точок
+                    </label>
+                    <label class="checkbox-wrapper">
+                        <input type="checkbox" id="sequentialAnimation">
+                        🕒 Радарна анімація
                     </label>
                 </div>
                 
@@ -81,7 +85,7 @@
         </div>
 
         <div class="export-section">
-            <button id="snapBtn" class="btn btn-export">
+            <button id="snapBtn" class="btn">
                 📸 Скачати мапу (.png)
             </button>
         </div>
