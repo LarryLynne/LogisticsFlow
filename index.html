@@ -3,104 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Logistics Flow Commander</title>
+    <title>SpeedInfo</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+    <body>
 
-    <div id="controls">
-        <div class="controls-scrollable">
-            <h3>SpeedInfo</h3>
-            
-            <div class="google-sheets-wrapper">
-                <button id="loadSheetBtn" class="btn">
-                    🔄 Оновити дані
-                </button>
-                <div id="sheetStatus" class="status-msg"></div>
-            </div>
+        <div id="controls" class="hidden-panel">
+            <div class="controls-scrollable">
+                <div id="dynamicFiltersGeneral" style="margin-bottom: 15px;"></div>
 
-            <div id="dynamicFiltersGeneral" style="margin-bottom: 15px;"></div>
-
-            <div class="filters-split">
-                <div id="filtersColumnA" class="filter-column">
-                    <h4>Відправник</h4>
-                    <div id="dynamicFiltersA"></div>
-                </div>
-                <div id="filtersColumnB" class="filter-column">
-                    <h4>Отримувач</h4>
-                    <div id="dynamicFiltersB"></div>
-                </div>
-            </div>
-
-            <div id="settings">
-                <h4>Зовнішній вигляд</h4>
-                <div class="control-group">
-                    <div class="slider-label">Колір ліній</div>
-                    <select id="colorSelect">
-                        <option value="#38bdf8">🟦 Блакитний</option>
-                        <option value="#10b981">🟩 Зелений</option>
-                        <option value="#f43f5e">🟥 Червоний</option>
-                        <option value="#f59e0b">🟧 Помаранчевий</option>
-                        <option value="#a855f7">🟪 Фіолетовий</option>
-                    </select>
-
-                    <div class="slider-label" style="margin-top: 10px;"><span>Товщина ліній</span><span id="weightVal" class="slider-val">2</span></div>
-                    <input type="range" id="weightRange" min="1" max="10" value="2">
-                    <div class="slider-label" style="margin-top: 10px;">Колір кордонів</div>
-                    <select id="borderColorSelect">
-                        <option value="#38bdf8">🟦 Блакитний</option>
-                        <option value="#ffffff">⬜ Білий</option>
-                        <option value="#fbbf24">🟨 Жовтий</option>
-                        <option value="#10b981">🟩 Зелений</option>
-                        <option value="#f43f5e">🟥 Червоний</option>
-                    </select>
-                </div>
-
-                <h4>Відображення даних</h4>
-                <div class="control-group">
-                    <label class="checkbox-wrapper">
-                        <input type="checkbox" id="animateFlow">
-                        Анімувати рух
-                    </label>
-                    <label class="checkbox-wrapper">
-                        <input type="checkbox" id="showTimeLabel">
-                        🕒 Відображати час
-                    </label>
-                    <label class="checkbox-wrapper">
-                        <input type="checkbox" id="showEHLabel">
-                        📦 Відображати ЕН
-                    </label>
-                    <label class="checkbox-wrapper">
-                        <input type="checkbox" id="showCityLabels">
-                        Відображати назви точок
-                    </label>
-                    <label class="checkbox-wrapper">
-                        <input type="checkbox" id="sequentialAnimation">
-                        🕒 Радарна анімація
-                    </label>
+                <div class="filters-split">
+                    <div id="filtersColumnA" class="filter-column">
+                        <div id="dynamicFiltersA"></div>
+                    </div>
+                    <div id="filtersColumnB" class="filter-column">
+                        <div id="dynamicFiltersB"></div>
+                    </div>
                 </div>
                 
-                <div id="status" style="color: var(--text-muted)">Дані не завантажено</div>
+                <div id="status" style="color: var(--text-muted); margin-top: 20px;">Дані не завантажено</div>
             </div>
         </div>
 
-        <div class="export-section">
-            <button id="snapBtn" class="btn">
-                📸 Скачати мапу (.png)
-            </button>
+        <div id="settings-panel" class="hidden-panel">
+            <div class="controls-scrollable">
+                <h3>Налаштування</h3>
+                
+                <div id="settings">
+                    <h4>Зовнішній вигляд</h4>
+                    <div class="control-group">
+                        <div class="slider-label">Колір ліній</div>
+                        <select id="colorSelect">
+                            <option value="#38bdf8">🟦 Блакитний</option>
+                            <option value="#10b981">🟩 Зелений</option>
+                            <option value="#f43f5e">🟥 Червоний</option>
+                            <option value="#f59e0b">🟧 Помаранчевий</option>
+                            <option value="#a855f7">🟪 Фіолетовий</option>
+                        </select>
+
+                        <div class="slider-label" style="margin-top: 10px;"><span>Товщина ліній</span><span id="weightVal" class="slider-val">2</span></div>
+                        <input type="range" id="weightRange" min="1" max="10" value="2">
+                        
+                        <div class="slider-label" style="margin-top: 10px;">Колір кордонів</div>
+                        <select id="borderColorSelect">
+                            <option value="#38bdf8">🟦 Блакитний</option>
+                            <option value="#ffffff">⬜ Білий</option>
+                            <option value="#fbbf24">🟨 Жовтий</option>
+                            <option value="#10b981">🟩 Зелений</option>
+                            <option value="#f43f5e">🟥 Червоний</option>
+                        </select>
+                    </div>
+
+                    <h4>Відображення даних</h4>
+                    <div class="control-group">
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox" id="animateFlow">
+                            Анімувати рух
+                        </label>
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox" id="showTimeLabel">
+                            🕒 Відображати час
+                        </label>
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox" id="showEHLabel">
+                            📦 Відображати ЕН
+                        </label>
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox" id="showCityLabels">
+                            Відображати назви точок
+                        </label>
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox" id="sequentialAnimation">
+                            🕒 Радарна анімація
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="export-section">
+                <button id="snapBtn" class="btn">
+                    📸 Скачати мапу (.png)
+                </button>
+            </div>
         </div>
-    </div>
+        <div id="map-overlay-title">SpeedInfo</div>
+        <div id="map"></div>
 
-    <div id="map"></div>
-
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-    <script src="https://unpkg.com/leaflet-simple-map-screenshoter"></script>
-    
-    <script src="script.js"></script>
-</body>
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+        <script src="https://unpkg.com/leaflet-simple-map-screenshoter"></script>
+        
+        <script src="script.js"></script>
+    </body>
 </html>

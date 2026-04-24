@@ -15,7 +15,8 @@ body { margin: 0; padding: 0; font-family: 'Roboto', sans-serif; display: flex; 
 /* Виїзна панель */
 #controls {
     position: absolute; left: 0; top: 0; bottom: 0;
-    width: 360px; background: var(--sidebar-bg); color: var(--text-main);
+    width: 950px; /* <--- Ширина для полноценного "пульта" */
+    background: var(--sidebar-bg); color: var(--text-main);
     box-shadow: 4px 0 20px rgba(0,0,0,0.8); z-index: 1000; display: flex; flex-direction: column;
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -37,19 +38,108 @@ h3 { margin: 0 0 20px 0; font-weight: 700; font-size: 1.4rem; color: #fff; borde
 .status-msg { font-size: 0.8rem; margin-top: 8px; text-align: center; }
 
 /* Сітка фільтрів */
-.filters-split { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
-.filter-column { display: flex; flex-direction: column; gap: 12px; }
-.filter-column h4 { margin: 0; font-size: 0.85rem; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; text-align: center; }
+.filters-split { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 30px; 
+    margin-bottom: 20px; 
+    border-top: 1px solid rgba(255,255,255,0.1); 
+    padding-top: 15px; 
+}
 
-.dynamic-filter-group h5 { margin: 0 0 6px 0; font-size: 0.7rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; }
-.filter-list { max-height: 140px; overflow-y: auto; background: var(--input-bg); border-radius: 6px; padding: 8px; border: 1px solid rgba(255,255,255,0.05); }
-.filter-list label { display: flex; align-items: center; font-size: 0.8rem; margin-bottom: 8px; cursor: pointer; color: var(--text-main); line-height: 1.2; word-break: break-word; }
-.filter-list label:last-child { margin-bottom: 0; }
-.filter-list input { margin-right: 6px; cursor: pointer; width: 14px; height: 14px; flex-shrink: 0; }
+.filter-column { position: relative; margin-top: 25px; }
 
+.filter-column h4 {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    border-bottom: none;
+    margin: 0;
+}
+
+/* Робимо контейнери (куди скрипт кидає дані) гнучкими, щоб стовпці стали в ряд */
+#dynamicFiltersA, #dynamicFiltersB {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+    align-items: flex-start;
+}
+
+.dynamic-filter-group {
+    flex: 1;
+    min-width: 100px; /* Мінімальна ширина одного стовпця */
+    max-width: 130px;
+}
+
+.dynamic-filter-group h5 {
+    font-size: 0.65rem;
+    margin-bottom: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--accent); /* Підсвітимо заголовки груп */
+}
+
+/* Срезы (Slicers) - ПОВНИЙ КОД */
+.filter-list { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 4px; 
+    max-height: 350px; 
+    overflow-y: auto; 
+    background: transparent; 
+    border: none; 
+    padding: 2px;
+}
+
+.slicer-btn { 
+    display: flex; 
+    justify-content: flex-start; 
+    align-items: center;
+    background: var(--input-bg); 
+    border: 1px solid rgba(255,255,255,0.1); 
+    border-radius: 6px; 
+    padding: 6px 8px;
+    min-height: 28px;
+    cursor: pointer; 
+    transition: all 0.2s; 
+    position: relative; 
+    overflow: hidden;
+    width: 100%;
+}
+
+.slicer-btn:hover { border-color: rgba(255,255,255,0.3); background: #2a3b52; }
+.slicer-btn input { position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0; }
+
+.slicer-text { 
+    font-size: 0.7rem; 
+    font-weight: 500; 
+    color: var(--text-main); 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+    pointer-events: none;
+}
+
+.slicer-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+.slicer-btn.active .slicer-text {
+    color: #000;
+    font-weight: 700;
+}
+
+/* Кастомний скроллбар для списків */
 .filter-list::-webkit-scrollbar { width: 4px; }
 .filter-list::-webkit-scrollbar-track { background: transparent; }
 .filter-list::-webkit-scrollbar-thumb { background: #475569; border-radius: 2px; }
+
+/* --------------------------------------------------- */
 
 .export-section { padding: 20px 25px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; background: var(--sidebar-bg); flex-shrink: 0; width: 100%; }
 
@@ -86,3 +176,52 @@ select:hover { background: #475569; }
 .radar-fade { animation: radarFadeAnim 2.5s ease-in-out forwards; }
 .animated-flow.radar-fade { animation: flowAnimation 1.5s linear infinite, radarFadeAnim 2.5s ease-in-out forwards; }
 @keyframes radarFadeAnim { 0% { opacity: 0; } 15% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
+
+/* Права панель */
+#settings-panel {
+    position: absolute; right: 0; top: 0; bottom: 0;
+    width: 360px; background: var(--sidebar-bg); color: var(--text-main);
+    box-shadow: -4px 0 20px rgba(0,0,0,0.8); z-index: 1000; display: flex; flex-direction: column;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Скрытое состояние для правой панели (уезжает вправо) */
+#settings-panel.hidden-panel {
+    transform: translateX(100%);
+}
+
+/* Изменим позицию кнопок зума, чтобы они не перекрывались правой панелью */
+.leaflet-bottom.leaflet-right {
+    right: 30px !important;
+    bottom: 30px !important;
+}
+
+/* Парящий заголовок на карте */
+#map-overlay-title {
+    position: absolute;
+    top: 25px;
+    left: 50%; /* Сдвигаем начало блока на середину экрана */
+    transform: translateX(-50%); /* Сдвигаем сам блок обратно на половину его ширины для центровки */
+    z-index: 1100;
+    font-size: 2.2rem; /* Можно чуть-чуть увеличить для солидности */
+    font-weight: 800;
+    color: #45bafd;
+    text-transform: uppercase;
+    letter-spacing: 6px; /* Увеличили межсимвольный интервал */
+    pointer-events: none;
+    
+    /* Свечение (Glow effect) */
+    text-shadow: 
+        0 0 10px rgba(56, 189, 248, 0.8),
+        0 0 20px rgba(56, 189, 248, 0.4),
+        0 0 40px rgba(56, 189, 248, 0.2);
+    
+    font-family: 'Roboto', sans-serif;
+    opacity: 0.9;
+    white-space: nowrap; /* Чтобы заголовок всегда был в одну строку */
+}
+
+/* Удаляем лишние отступы, которые остались от старого заголовка */
+.controls-scrollable {
+    padding-top: 40px; /* Чтобы фильтры не прилипали к верхнему краю */
+}
