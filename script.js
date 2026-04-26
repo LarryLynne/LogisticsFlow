@@ -371,6 +371,42 @@ function drawLogisticsMap() {
         return;
     }
 
+    let globalTotalEH = 0, globalTotalFundSec = 0, globalSumDurationSec = 0, globalCount = 0;
+    
+    filteredData.forEach(item => {
+        globalTotalEH += item.eh;
+        globalTotalFundSec += (item.durationSec * item.eh);
+        globalSumDurationSec += item.durationSec;
+        globalCount += 1;
+    });
+
+    let globalAvgSec = globalCount > 0 
+        ? (globalTotalEH > 0 ? globalTotalFundSec / globalTotalEH : globalSumDurationSec / globalCount) 
+        : 0;
+
+    const MAX_SCALE_SEC = 48 * 3600; 
+    let ratio = globalAvgSec / MAX_SCALE_SEC;
+    if (ratio > 1) ratio = 1; // Ограничиваем, чтобы стрелка не улетела за правый край
+
+    // 1. Вращаем стрелку (от -90 градусов до +90 градусов)
+    const needleAngle = -90 + (ratio * 180);
+    document.getElementById('speed-needle').style.transform = `translateX(-50%) rotate(${needleAngle}deg)`;
+
+    // 2. Закрашиваем дугу (252 - это полная длина контура в SVG)
+    const dashOffset = 252 - (252 * ratio);
+    document.querySelector('.dial-fill').style.strokeDashoffset = dashOffset;
+
+    // 3. Выводим текст
+    if (globalAvgSec > 0) {
+        const h = Math.floor(globalAvgSec / 3600);
+        const m = Math.floor((globalAvgSec % 3600) / 60);
+        const s = Math.round(globalAvgSec % 60);
+        document.getElementById('map-overlay-time').textContent = 
+            `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    } else {
+        document.getElementById('map-overlay-time').textContent = "0:00:00";
+    }
+
     // 4. --- ЛОГІКА "ХАБ-ФІЛІЯ" ---
     const selectedCitiesA = activeFilters['ФРД А'] || [];
     const selectedCitiesB = activeFilters['ФРД Б'] || [];

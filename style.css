@@ -225,3 +225,86 @@ select:hover { background: #475569; }
 .controls-scrollable {
     padding-top: 40px; /* Чтобы фильтры не прилипали к верхнему краю */
 }
+
+#speedometer-container {
+    position: absolute;
+    top: 10px;        /* Выравниваем по верхнему краю с элементами управления */
+    right: 110px;      /* Отступ от правого края, чтобы быть ПЕРЕД переключателем карт */
+    left: auto;
+    transform: none;
+    z-index: 1100;
+    width: 160px;     /* Немного уменьшим размер для компактности в углу */
+    height: 100px;
+    pointer-events: none;
+    text-align: center;
+    /* Добавим легкую подложку, чтобы на светлых картах спидометр был читаем */
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(4px);
+    border-radius: 12px;
+    padding: 10px;
+}
+
+.speed-dial {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.dial-bg {
+    stroke: rgba(255, 255, 255, 0.1);
+    stroke-width: 12;
+    stroke-linecap: round;
+}
+
+.dial-fill {
+    stroke: #38bdf8; /* Цвет шкалы (можно поменять) */
+    stroke-width: 12;
+    stroke-linecap: round;
+    stroke-dasharray: 252; /* Длина дуги */
+    stroke-dashoffset: 252; /* Начинаем с пустой шкалы */
+    transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.6));
+}
+
+#speed-needle {
+    position: absolute;
+    bottom: 30px; /* Центр вращения стрелки */
+    left: 50%;
+    width: 4px;
+    height: 60px;
+    background: #f43f5e; /* Красная стрелка */
+    transform-origin: bottom center;
+    transform: translateX(-50%) rotate(-90deg); /* -90deg это крайнее левое положение (0) */
+    transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 2px;
+    box-shadow: 0 0 8px rgba(244, 63, 94, 0.8);
+    z-index: 2;
+}
+
+/* Центральный "винтик" стрелки */
+#speed-needle::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: -4px;
+    width: 12px;
+    height: 12px;
+    background: #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 0 5px rgba(0,0,0,0.5);
+}
+
+/* Цифры внутри спидометра */
+#map-overlay-time {
+    position: absolute;
+    bottom: -15px;
+    width: 100%;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #ffffff;
+    font-family: 'Roboto', sans-serif;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+}
