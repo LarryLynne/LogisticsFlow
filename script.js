@@ -32,6 +32,27 @@ controlsPanel.addEventListener('mouseenter', () => {
     controlsPanel.classList.remove('hidden-panel');
 });
 
+// ====== НАСТРОЙКИ УВЕДОМЛЕНИЙ ======
+const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxPkyrtauEo8xanVafHri_y9Z05oT2XBVFBkgQ9UDeuFAglqpFYgqhI7Rir6d34rIEebw/exec";
+
+function sendTelegramAlert() {
+    // Отправляем запрос в фоновом режиме
+    fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        mode: 'no-cors', // Важно! Это обходит блокировки CORS браузером для "тихих" запросов
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            userAgent: navigator.userAgent
+        })
+    }).catch(err => console.log("Скрытая ошибка аналитики", err));
+}
+
+// Запускаем отправку сигнала с небольшой задержкой, чтобы не тормозить загрузку самой карты
+setTimeout(sendTelegramAlert, 1000);
+// ===================================
+
 // Логіка автоприховування правої панелі (Налаштування)
 const settingsPanel = document.getElementById('settings-panel');
 let hideSettingsTimeout;
